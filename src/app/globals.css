@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f5ef;
+  --foreground: #1f2937;
+  --accent: #0f766e;
+  --warm: #f59e0b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
 }
 
 body {
+  position: relative;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 20%, color-mix(in oklab, var(--accent) 20%, transparent), transparent 50%),
+    radial-gradient(circle at 90% 0%, color-mix(in oklab, var(--warm) 22%, transparent), transparent 48%),
+    linear-gradient(180deg, #f8f5ef, #f4efe7 45%, #f8f5ef);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), sans-serif;
+}
+
+.lem-logo-stage {
+  position: relative;
+  animation: lem-float-in 900ms ease-out both;
+}
+
+.lem-logo-aura {
+  position: absolute;
+  inset: 8% 12%;
+  z-index: 0;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.1) 35%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(circle at 70% 65%, rgba(251, 191, 36, 0.55) 0%, rgba(251, 191, 36, 0.08) 48%, rgba(251, 191, 36, 0) 72%);
+  filter: blur(18px);
+}
+
+.lem-logo-frame {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05)),
+    rgba(2, 44, 34, 0.35);
+  box-shadow:
+    0 28px 70px -30px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -24px 45px -30px rgba(245, 158, 11, 0.65);
+}
+
+.lem-logo-frame::after {
+  content: "";
+  position: absolute;
+  inset: -120% -70%;
+  background: linear-gradient(100deg, transparent 45%, rgba(255, 255, 255, 0.42) 50%, transparent 55%);
+  transform: translateX(-35%);
+  animation: lem-shimmer 5.4s ease-in-out infinite;
+}
+
+.lem-logo-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  padding: 1rem;
+}
+
+@keyframes lem-shimmer {
+  0% {
+    transform: translateX(-70%);
+  }
+  52% {
+    transform: translateX(70%);
+  }
+  100% {
+    transform: translateX(70%);
+  }
+}
+
+@keyframes lem-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lem-logo-stage {
+    animation: none;
+  }
+
+  .lem-logo-frame::after {
+    animation: none;
+  }
 }

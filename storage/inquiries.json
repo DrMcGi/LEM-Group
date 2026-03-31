@@ -1,0 +1,20 @@
+[
+  {
+    "fullName": "John Doe",
+    "phoneNumber": "071 234 5678",
+    "email": "john@example.com",
+    "propertyId": "lebowakgomo-unit-f",
+    "message": "I am interested in renting one of the rooms from next month. Can we arrange a viewing?",
+    "id": "5be8c3fa-7faa-4737-856d-6eb831b8de99",
+    "createdAt": "2026-03-30T22:41:09.691Z"
+  },
+  {
+    "fullName": "John Doe",
+    "phoneNumber": "071 234 5678",
+    "email": "john@example.com",
+    "propertyId": "lebowakgomo-unit-f",
+    "message": "I am interested in renting one of the rooms from next month. Can we arrange a viewing?",
+    "id": "ab58c2a9-5384-4577-b3f7-ca0be678f9d7",
+    "createdAt": "2026-03-30T22:40:59.257Z"
+  }
+]
