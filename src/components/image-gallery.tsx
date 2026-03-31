@@ -30,7 +30,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="relative h-56 sm:h-auto sm:aspect-video w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-900">
         <Image
           src={validImages[selectedIndex]}
@@ -79,7 +79,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
       </div>
 
       {validImages.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex w-full max-w-full gap-2 overflow-x-auto pb-2">
           {validImages.map((image, index) => (
             <button
               key={index}

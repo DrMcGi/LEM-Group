@@ -81,7 +81,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
         <div className="rounded-3xl border border-black/10 bg-white/90 p-4 shadow-lg sm:p-8">
           <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-8">
+            <div className="min-w-0 lg:col-span-2 space-y-8">
               <ImageGallery images={property.images} title={property.name} />
 
               <div>
@@ -147,7 +147,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
               )}
             </div>
 
-            <div className="space-y-4 lg:sticky lg:top-8 h-fit">
+            <div className="min-w-0 space-y-4 lg:sticky lg:top-8 h-fit">
               <div className="rounded-2xl border border-teal-200 bg-teal-50 p-6">
                 <div className="mb-4">
                   <div className="text-sm text-teal-700 font-semibold">Starting from</div>
