@@ -31,7 +31,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative aspect-[4/3] sm:aspect-video w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-900">
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-900">
         <Image
           src={validImages[selectedIndex]}
           alt={`${title} - Image ${selectedIndex + 1}`}
