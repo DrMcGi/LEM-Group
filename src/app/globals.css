@@ -88,6 +88,49 @@ h4 {
   padding: 1rem;
 }
 
+.property-showcase-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 500ms ease, box-shadow 500ms ease, border-color 300ms ease, background-color 300ms ease;
+}
+
+.property-showcase-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  z-index: -1;
+}
+
+.property-showcase-card-rooms::after {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.42), rgba(45, 212, 191, 0.18));
+}
+
+.property-showcase-card-house::after {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(120, 113, 108, 0.16));
+}
+
+.property-showcase-card:hover {
+  box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.45);
+}
+
+.property-showcase-card:hover::after {
+  opacity: 1;
+}
+
+.property-showcase-card-reflection {
+  position: absolute;
+  inset: -35% auto auto -10%;
+  width: 70%;
+  height: 120%;
+  background: radial-gradient(circle at var(--pointer-x, 50%) var(--pointer-y, 50%), rgba(255, 255, 255, 0.22), transparent 36%);
+  opacity: 0.72;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
 @keyframes lem-shimmer {
   0% {
     transform: translateX(-70%);
@@ -118,5 +161,9 @@ h4 {
 
   .lem-logo-frame::after {
     animation: none;
+  }
+
+  .property-showcase-card {
+    transition: none;
   }
 }

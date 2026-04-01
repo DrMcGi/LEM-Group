@@ -1,13 +1,7 @@
 import { InquiryForm } from "@/components/inquiry-form";
+import { PropertyShowcaseCard } from "@/components/property-showcase-card";
 import { properties } from "@/data/properties";
 import Image from "next/image";
-import Link from "next/link";
-
-const currency = new Intl.NumberFormat("en-ZA", {
-  style: "currency",
-  currency: "ZAR",
-  maximumFractionDigits: 0,
-});
 
 export default function Home() {
   return (
@@ -65,58 +59,7 @@ export default function Home() {
 
         <section id="properties" className="mt-10 grid gap-6 md:grid-cols-2">
           {properties.map((property) => (
-            <Link key={property.id} href={`/properties/${property.id}`}>
-              <article className="group h-full rounded-3xl border border-black/10 bg-white/80 p-6 shadow-lg backdrop-blur transition hover:-translate-y-1 hover:shadow-xl hover:border-teal-300 cursor-pointer">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-teal-700">
-                      {property.type === "rooms" ? "Monthly Rooms" : "Family Home"}
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900">{property.name}</h2>
-                  </div>
-                  <svg className="h-5 w-5 text-teal-600 transition group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-
-                <p className="mt-2 text-sm text-stone-600">
-                  {property.location.unit}, {property.location.street}, {property.location.city}
-                </p>
-                <p className="mt-3 text-lg font-bold text-amber-700">
-                  {currency.format(property.pricePerMonth)} / month
-                </p>
-                <p className="mt-2 text-stone-700">{property.summary}</p>
-
-                <ul className="mt-4 space-y-2 text-sm text-stone-700">
-                  {property.details.slice(0, 3).map((detail) => (
-                    <li key={detail} className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-teal-700" aria-hidden />
-                      {detail}
-                    </li>
-                  ))}
-                  {property.details.length > 3 && (
-                    <li className="text-teal-700 font-semibold">+ {property.details.length - 3} more features</li>
-                  )}
-                </ul>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {property.highlights.map((highlight) => (
-                    <span
-                      key={highlight}
-                      className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700"
-                    >
-                      {highlight}
-                    </span>
-                  ))}
-                </div>
-
-                {property.rooms && (
-                  <div className="mt-4 rounded-lg bg-teal-50 p-3 text-xs text-teal-800 font-semibold">
-                    {property.rooms.filter((r) => r.availability === "available").length} of {property.rooms.length} units available
-                  </div>
-                )}
-              </article>
-            </Link>
+            <PropertyShowcaseCard key={property.id} property={property} />
           ))}
         </section>
 
