@@ -15,7 +15,7 @@ export function SiteFooter() {
               </button>
 
               <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-[min(92vw,22rem)] -translate-x-1/2 rounded-xl border border-teal-200 bg-white p-3 text-left text-xs leading-relaxed text-stone-700 opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
-                <span className="block font-semibold text-teal-800">DrMcGi&apos;s SaaS Atelier</span>
+                <span className="block font-semibold text-teal-800">DrMcGi&apos;s SaaS Atelier (Pty) Ltd.</span>
                 <span className="block mt-1">Phone: 064 921 1745</span>
                 <span className="block">Website: www.drmcgi.co.za</span>
                 <span className="block">Email: giftk.rantho@gmail.com</span>
