@@ -1,7 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function SiteHeader() {
+	const pathname = usePathname();
+	const showAdminLink = pathname === "/";
+
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:px-8">
@@ -33,11 +39,19 @@ export function SiteHeader() {
               Properties
             </Link>
             <Link
-              href="/#inquire"
+              href="/#enquire"
               className="rounded-lg bg-teal-700 px-2 py-2 text-white transition hover:bg-teal-800 sm:px-3"
             >
-              Inquire
+              Enquire
             </Link>
+			{showAdminLink ? (
+				<Link
+					href="/admin"
+					className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-2 text-teal-900 transition hover:bg-teal-100 sm:px-3"
+				>
+					Admin
+				</Link>
+			) : null}
           </nav>
 
           <a

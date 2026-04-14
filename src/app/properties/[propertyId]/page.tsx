@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { properties, propertyMap } from "@/data/properties";
+import { getProperties, getPropertyById } from "@/lib/property-store";
 import { ImageGallery } from "@/components/image-gallery";
 import { RoomCard } from "@/components/room-card";
 import { notFound } from "next/navigation";
@@ -9,9 +9,7 @@ import Link from "next/link";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lem-accommodation.vercel.app";
 
 type PropertyDetailPageProps = {
-  params: Promise<{
-    propertyId: string;
-  }>;
+  params: Promise<{ propertyId: string }>;
 };
 
 const currency = new Intl.NumberFormat("en-ZA", {
@@ -20,9 +18,11 @@ const currency = new Intl.NumberFormat("en-ZA", {
   maximumFractionDigits: 0,
 });
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
   const { propertyId } = await params;
-  const property = propertyMap.get(propertyId);
+  const property = await getPropertyById(propertyId);
 
   if (!property) {
     return { title: "Property Not Found" };
@@ -69,14 +69,13 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
 }
 
 export async function generateStaticParams() {
-  return properties.map((property) => ({
-    propertyId: property.id,
-  }));
+  const properties = await getProperties();
+  return properties.map((property) => ({ propertyId: property.id }));
 }
 
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const { propertyId } = await params;
-  const property = propertyMap.get(propertyId);
+  const property = await getPropertyById(propertyId);
 
   if (!property) {
     notFound();
@@ -236,10 +235,10 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 )}
 
                 <Link
-                  href="/#inquire"
+                  href="/#enquire"
                   className="mt-6 block w-full rounded-xl bg-teal-700 px-4 py-3 text-center font-semibold text-white transition hover:bg-teal-800"
                 >
-                  Submit Inquiry
+                  Submit Enquiry
                 </Link>
               </div>
 

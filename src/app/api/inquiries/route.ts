@@ -1,5 +1,5 @@
-import { propertyMap } from "@/data/properties";
 import { getInquiries, saveInquiry } from "@/lib/inquiry-store";
+import { getPropertyById } from "@/lib/property-store";
 import { z } from "zod";
 
 const inquirySchema = z.object({
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!propertyMap.has(parsed.data.propertyId)) {
+  const property = await getPropertyById(parsed.data.propertyId);
+  if (!property) {
     return Response.json({ error: "Selected property does not exist" }, { status: 400 });
   }
 

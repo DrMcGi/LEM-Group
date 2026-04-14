@@ -49,8 +49,13 @@ export function InquiryForm({ properties }: InquiryFormProps) {
         return;
       }
 
+      const popup = window.open("about:blank", "_blank");
+      if (popup) {
+        popup.opener = null;
+      }
+
       const whatsappMessage = [
-        "Hello LEM Accommodation, I would like to submit an inquiry:",
+        "Hello LEM Accommodation, I would like to submit an enquiry:",
         "",
         `Full Name: ${form.fullName}`,
         `Phone Number: ${form.phoneNumber}`,
@@ -63,9 +68,51 @@ export function InquiryForm({ properties }: InquiryFormProps) {
 
       const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
 
-      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      let savedToPortal = false;
+      try {
+        const response = await fetch("/api/enquiries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: form.fullName,
+            phoneNumber: form.phoneNumber,
+            email: form.email,
+            propertyId: form.propertyId,
+            message: form.message,
+          }),
+        });
 
-      setStatus("WhatsApp opened. Please send the pre-filled message to complete your inquiry.");
+        if (response.ok) {
+          savedToPortal = true;
+        } else {
+          const fallback = await fetch("/api/inquiries", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fullName: form.fullName,
+              phoneNumber: form.phoneNumber,
+              email: form.email,
+              propertyId: form.propertyId,
+              message: form.message,
+            }),
+          });
+          savedToPortal = fallback.ok;
+        }
+      } catch {
+        savedToPortal = false;
+      }
+
+      if (popup) {
+        popup.location.href = whatsappUrl;
+      } else {
+        window.open(whatsappUrl, "_blank");
+      }
+
+      setStatus(
+        savedToPortal
+          ? "Enquiry submitted. WhatsApp opened with a pre-filled message — please send it to complete your enquiry."
+          : "WhatsApp opened with a pre-filled message — please send it to complete your enquiry. (Note: Portal save failed. If you can, try again.)",
+      );
       setForm({ ...initialState, propertyId: properties[0]?.id ?? "" });
     } catch {
       setStatus("Could not open WhatsApp. Please try again in a moment.");
@@ -75,7 +122,7 @@ export function InquiryForm({ properties }: InquiryFormProps) {
   }
 
   return (
-    <section id="inquire" className="rounded-3xl border border-black/10 bg-white/75 p-6 shadow-xl backdrop-blur md:p-8">
+    <section id="enquire" className="rounded-3xl border border-black/10 bg-white/75 p-6 shadow-xl backdrop-blur md:p-8">
       <h2 className="text-2xl font-semibold tracking-tight text-stone-900">Book a Viewing or Ask a Question</h2>
       <p className="mt-2 text-stone-700">
         Tell us which property interests you and we will get back to you quickly.
@@ -152,7 +199,7 @@ export function InquiryForm({ properties }: InquiryFormProps) {
             disabled={submitting}
             className="inline-flex items-center justify-center rounded-xl bg-teal-700 px-5 py-2.5 font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "Opening..." : "Submit Inquiry on WhatsApp"}
+            {submitting ? "Opening..." : "Submit Enquiry on WhatsApp"}
           </button>
         </div>
       </form>
@@ -161,3 +208,5 @@ export function InquiryForm({ properties }: InquiryFormProps) {
     </section>
   );
 }
+
+export const EnquiryForm = InquiryForm;

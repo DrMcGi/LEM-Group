@@ -16,7 +16,11 @@ export async function getInquiries(): Promise<InquiryRecord[]> {
   try {
     const fileContent = await readFile(inquiriesFile, "utf8");
     const parsed = JSON.parse(fileContent) as InquiryRecord[];
-    return parsed.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    const normalized = (Array.isArray(parsed) ? parsed : []).map((record) => ({
+      ...record,
+      status: record.status ?? "new",
+    }));
+    return normalized.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   } catch {
     return [];
   }
@@ -29,10 +33,37 @@ export async function saveInquiry(input: InquiryInput): Promise<InquiryRecord> {
     ...input,
     id: randomUUID(),
     createdAt: new Date().toISOString(),
+    status: "new",
   };
 
   const next = [record, ...existing];
   await writeFile(inquiriesFile, JSON.stringify(next, null, 2), "utf8");
 
   return record;
+}
+
+export async function updateInquiry(
+  inquiryId: string,
+  patch: Partial<Pick<InquiryRecord, "status" | "updatedAt">>,
+): Promise<InquiryRecord> {
+  const existing = await getInquiries();
+  const index = existing.findIndex((inquiry) => inquiry.id === inquiryId);
+
+  if (index === -1) {
+    throw new Error("Inquiry not found");
+  }
+
+  const current = existing[index];
+  const next: InquiryRecord = {
+    ...current,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+    status: patch.status ?? current.status ?? "new",
+  };
+
+  const updated = [...existing];
+  updated[index] = next;
+  await writeFile(inquiriesFile, JSON.stringify(updated, null, 2), "utf8");
+
+  return next;
 }

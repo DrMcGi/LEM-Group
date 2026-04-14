@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# local storage (runtime)
+/storage/admin-users.json
+/storage/properties.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*

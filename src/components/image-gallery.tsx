@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
+import { resolveBlobUrl } from "@/lib/blob-url";
 
 type ImageGalleryProps = {
   images: string[];
@@ -11,7 +12,7 @@ type ImageGalleryProps = {
 export function ImageGallery({ images, title }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const validImages = useMemo(() => images.filter((img) => img), [images]);
+  const validImages = useMemo(() => images.filter(Boolean).map(resolveBlobUrl), [images]);
 
   const handlePrevious = useCallback(() => {
     setSelectedIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
@@ -36,6 +37,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
           src={validImages[selectedIndex]}
           alt={`${title} - Image ${selectedIndex + 1}`}
           fill
+          sizes="(max-width: 640px) 100vw, 66vw"
           className="object-cover"
           priority
         />
@@ -92,6 +94,7 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
                 src={image}
                 alt={`Thumbnail ${index + 1}`}
                 fill
+                sizes="80px"
                 className="object-cover"
               />
             </button>

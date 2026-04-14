@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { InquiryForm } from "@/components/inquiry-form";
+import { EnquiryForm } from "@/components/inquiry-form";
 import { PropertyShowcaseCard } from "@/components/property-showcase-card";
-import { properties } from "@/data/properties";
+import { getProperties } from "@/lib/property-store";
 import Image from "next/image";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lem-accommodation.vercel.app";
@@ -15,7 +15,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const properties = await getProperties();
+
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -24,7 +28,7 @@ export default function Home() {
         name: "LEM Accommodation",
         url: siteUrl,
         description:
-          "Monthly accommodation listings in Polokwane and Lebowakgomo with direct inquiries and clear pricing.",
+          "Monthly accommodation listings in Polokwane and Lebowakgomo with direct enquiries and clear pricing.",
       },
       {
         "@type": "Organization",
@@ -74,10 +78,10 @@ export default function Home() {
                   View Properties
                 </a>
                 <a
-                  href="#inquire"
+                  href="#enquire"
                   className="rounded-xl border border-white/50 px-4 py-2 transition hover:bg-white/15"
                 >
-                  Submit Inquiry
+                  Submit Enquiry
                 </a>
               </div>
             </div>
@@ -108,7 +112,7 @@ export default function Home() {
         </section>
 
         <section className="mt-10">
-          <InquiryForm properties={properties} />
+          <EnquiryForm properties={properties} />
         </section>
       </section>
     </main>

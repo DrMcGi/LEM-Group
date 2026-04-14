@@ -3,6 +3,7 @@
 import { RoomUnit } from "@/types";
 import { useState } from "react";
 import { ImageGallery } from "./image-gallery";
+import { resolveBlobUrl } from "@/lib/blob-url";
 
 type RoomCardProps = {
   room: RoomUnit;
@@ -45,7 +46,7 @@ export function RoomCard({ room, formattedPrice, propertyName }: RoomCardProps) 
             <div className="relative h-full w-full bg-stone-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={room.images[0]}
+                src={resolveBlobUrl(room.images[0])}
                 alt={room.roomNumber}
                 className="h-full w-full object-cover"
                 onError={(e) => {

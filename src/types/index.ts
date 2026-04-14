@@ -44,7 +44,22 @@ export type InquiryInput = {
   message: string;
 };
 
+export type EnquiryInput = InquiryInput;
+
 export type InquiryRecord = InquiryInput & {
   id: string;
   createdAt: string;
+  status: "new" | "contacted" | "archived";
+  updatedAt?: string;
+};
+
+export type EnquiryRecord = InquiryRecord;
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  createdAt: string;
+  disabled?: boolean;
 };

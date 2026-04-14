@@ -2,8 +2,8 @@
 
 Modern rental website for LEM Accommodation with:
 - property showcase for both locations
-- inquiry submission API with server-side validation
-- lightweight internal inquiries dashboard
+- enquiry submission API with server-side validation
+- lightweight internal enquiries dashboard
 
 ### Tech Stack
 
@@ -11,7 +11,7 @@ Modern rental website for LEM Accommodation with:
 - TypeScript
 - Tailwind CSS
 - Zod validation
-- Local JSON persistence for inquiries
+- Local JSON persistence for enquiries
 
 ### Properties Included
 
@@ -37,14 +37,45 @@ Open http://localhost:3000 in your browser.
 
 ### Useful Routes
 
-- `/` public property and inquiry page
-- `/admin/inquiries` simple internal leads table
+- `/` public property and enquiry page
+- `/admin/enquiries` internal leads table (preferred)
+- `/admin/inquiries` internal leads table (legacy; still supported)
 - `/api/properties` property JSON API
-- `/api/inquiries` inquiries API (`GET`, `POST`)
+- `/api/inquiries` enquiries API (`GET`, `POST`)
 
-### Inquiry Storage
+### Enquiry Storage
 
-Inquiries are stored in `storage/inquiries.json`.
+Enquiries are stored in `storage/inquiries.json`.
+
+## Admin Portal
+
+The admin portal is available under:
+
+- `/admin` (dashboard)
+- `/admin/inquiries` (manage enquiry statuses)
+- `/admin/properties` (edit pricing and room availability)
+- `/admin/users` (create additional admin users)
+
+### Initial admin setup
+
+Set the following environment variables before running the app:
+
+- `AUTH_SECRET` (required in production; minimum 16 characters)
+- `ADMIN_EMAIL` (used to auto-create the first admin user if no admin users exist yet)
+- `ADMIN_PASSWORD` (used to auto-create the first admin user if no admin users exist yet)
+- `ADMIN_NAME` (optional)
+
+### Admin image uploads (Vercel Blob)
+
+Room image uploads in the admin portal use Vercel Blob.
+
+- Set `BLOB_READ_WRITE_TOKEN` in your environment (locally and in Vercel project env vars).
+
+After the first admin is created, additional admins can be created via `/admin/users`.
+
+### Enquiry workflow
+
+Public enquiries are submitted to the site (stored for the admin dashboard) and WhatsApp is opened with a pre-filled message for the user to send.
 
 ### Production Upgrade Path
 

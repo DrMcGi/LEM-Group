@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
-import { properties } from "@/data/properties";
+import { getProperties } from "@/lib/property-store";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://lem-accommodation.vercel.app";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const properties = await getProperties();
 
   return [
     {

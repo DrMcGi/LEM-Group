@@ -6,7 +6,9 @@
     "propertyId": "lebowakgomo-unit-f",
     "message": "I am interested in renting one of the rooms from next month. Can we arrange a viewing?",
     "id": "5be8c3fa-7faa-4737-856d-6eb831b8de99",
-    "createdAt": "2026-03-30T22:41:09.691Z"
+    "createdAt": "2026-03-30T22:41:09.691Z",
+    "status": "contacted",
+    "updatedAt": "2026-04-13T23:35:27.653Z"
   },
   {
     "fullName": "John Doe",
@@ -15,6 +17,8 @@
     "propertyId": "lebowakgomo-unit-f",
     "message": "I am interested in renting one of the rooms from next month. Can we arrange a viewing?",
     "id": "ab58c2a9-5384-4577-b3f7-ca0be678f9d7",
-    "createdAt": "2026-03-30T22:40:59.257Z"
+    "createdAt": "2026-03-30T22:40:59.257Z",
+    "status": "archived",
+    "updatedAt": "2026-04-13T23:35:50.534Z"
   }
 ]
