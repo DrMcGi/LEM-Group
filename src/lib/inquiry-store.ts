@@ -2,13 +2,17 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { InquiryInput, InquiryRecord } from "@/types";
-import { ensureSchema, isPostgresConfigured, sql } from "@/lib/db";
+import { ensureSchema, isPostgresConfigured, isVercelRuntime, sql } from "@/lib/db";
 
 const storageDirectory = path.join(process.cwd(), "storage");
 const inquiriesFile = path.join(storageDirectory, "inquiries.json");
 
 async function ensureStorage() {
-  await mkdir(storageDirectory, { recursive: true });
+  try {
+    await mkdir(storageDirectory, { recursive: true });
+  } catch {
+    // On Vercel/serverless the filesystem may be read-only; ignore and fall back.
+  }
 }
 
 export async function getInquiries(): Promise<InquiryRecord[]> {
@@ -94,6 +98,10 @@ export async function saveInquiry(input: InquiryInput): Promise<InquiryRecord> {
     return record;
   }
 
+  if (isVercelRuntime()) {
+    throw new Error("Persistent storage is not configured. Connect Postgres on Vercel (POSTGRES_URL) to accept enquiries.");
+  }
+
   const existing = await getInquiries();
   const next = [record, ...existing];
   await writeFile(inquiriesFile, JSON.stringify(next, null, 2), "utf8");
@@ -150,6 +158,10 @@ export async function updateInquiry(
       status: (row.status as InquiryRecord["status"]) ?? "new",
       updatedAt: row.updatedAt ? (row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)) : undefined,
     };
+  }
+
+  if (isVercelRuntime()) {
+    throw new Error("Persistent storage is not configured. Connect Postgres on Vercel (POSTGRES_URL) to update enquiries.");
   }
 
   const existing = await getInquiries();

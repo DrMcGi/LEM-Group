@@ -3,13 +3,17 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AdminUser } from "@/types";
-import { ensureSchema, isPostgresConfigured, sql } from "@/lib/db";
+import { ensureSchema, isPostgresConfigured, isVercelRuntime, sql } from "@/lib/db";
 
 const storageDirectory = path.join(process.cwd(), "storage");
 const usersFile = path.join(storageDirectory, "admin-users.json");
 
 async function ensureStorage() {
-  await mkdir(storageDirectory, { recursive: true });
+  try {
+    await mkdir(storageDirectory, { recursive: true });
+  } catch {
+    // On Vercel/serverless the filesystem may be read-only; ignore and fall back.
+  }
 }
 
 async function readUsersFile(): Promise<AdminUser[]> {
@@ -26,6 +30,11 @@ async function readUsersFile(): Promise<AdminUser[]> {
 
 async function writeUsersFile(users: AdminUser[]) {
   await ensureStorage();
+
+  if (isVercelRuntime()) {
+    throw new Error("Persistent storage is not configured. Connect Postgres on Vercel (POSTGRES_URL) to manage admin users.");
+  }
+
   await writeFile(usersFile, JSON.stringify(users, null, 2), "utf8");
 }
 
@@ -57,6 +66,11 @@ async function ensureInitialAdminIfConfigured() {
       VALUES (${id}, ${normalizedEmail}, ${name}, ${passwordHash}, ${now}, false)
     `;
 
+    return;
+  }
+
+  if (isVercelRuntime()) {
+    // Avoid filesystem writes on Vercel. Without Postgres, we cannot persist admin users.
     return;
   }
 

@@ -2,13 +2,17 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Property, RoomAvailability } from "@/types";
 import { properties as seedProperties } from "@/data/properties";
-import { ensureSchema, isPostgresConfigured, sql } from "@/lib/db";
+import { ensureSchema, isPostgresConfigured, isVercelRuntime, sql } from "@/lib/db";
 
 const storageDirectory = path.join(process.cwd(), "storage");
 const propertiesFile = path.join(storageDirectory, "properties.json");
 
 async function ensureStorage() {
-  await mkdir(storageDirectory, { recursive: true });
+  try {
+    await mkdir(storageDirectory, { recursive: true });
+  } catch {
+    // On Vercel/serverless the filesystem may be read-only; ignore and fall back.
+  }
 }
 
 async function readPropertiesFile(): Promise<Property[] | null> {
@@ -25,6 +29,11 @@ async function readPropertiesFile(): Promise<Property[] | null> {
 
 async function writePropertiesFile(properties: Property[]) {
   await ensureStorage();
+
+  if (isVercelRuntime()) {
+    throw new Error("Persistent storage is not configured. Connect Postgres on Vercel (POSTGRES_URL) to enable saving changes.");
+  }
+
   await writeFile(propertiesFile, JSON.stringify(properties, null, 2), "utf8");
 }
 
@@ -52,6 +61,11 @@ async function ensureSeeded() {
 
   const existing = await readPropertiesFile();
   if (existing && existing.length) {
+    return;
+  }
+
+  if (isVercelRuntime()) {
+    // Avoid crashing the entire site on Vercel if Postgres isn't connected yet.
     return;
   }
 

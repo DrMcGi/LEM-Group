@@ -11,6 +11,10 @@ export function isPostgresConfigured() {
   );
 }
 
+export function isVercelRuntime() {
+  return process.env.VERCEL === "1" || process.env.VERCEL === "true";
+}
+
 export const sql = vercelSql;
 
 export async function ensureSchema() {
