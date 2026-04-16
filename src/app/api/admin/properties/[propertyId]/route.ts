@@ -13,6 +13,36 @@ const roomSchema = z.object({
     .object({
       bookedUntil: z.string().optional(),
       tenant: z.string().optional(),
+      tenantDetails: z
+        .object({
+          firstName: z.string().max(80),
+          lastName: z.string().max(80),
+          phoneNumber: z.string().min(3).max(40).optional(),
+          email: z.string().email().optional(),
+          residentialAddress: z.string().min(3).max(300).optional(),
+          idNumber: z.string().min(3).max(60).optional(),
+          notes: z.string().max(500).optional(),
+        })
+        .optional(),
+      leaseAgreementUrl: z.string().url().optional(),
+    })
+    .optional(),
+  lastBookingDetails: z
+    .object({
+      bookedUntil: z.string().optional(),
+      tenant: z.string().optional(),
+      tenantDetails: z
+        .object({
+          firstName: z.string().max(80),
+          lastName: z.string().max(80),
+          phoneNumber: z.string().min(3).max(40).optional(),
+          email: z.string().email().optional(),
+          residentialAddress: z.string().min(3).max(300).optional(),
+          idNumber: z.string().min(3).max(60).optional(),
+          notes: z.string().max(500).optional(),
+        })
+        .optional(),
+      leaseAgreementUrl: z.string().url().optional(),
     })
     .optional(),
 });

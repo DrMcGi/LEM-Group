@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Property, RoomAvailability } from "@/types";
+import type { Property, RoomAvailability, RoomTenantDetails } from "@/types";
 
 type Props = {
   property: Property;
@@ -53,8 +53,40 @@ export function PropertyEditor({ property }: Props) {
     setRooms((prev) => prev.map((room) => (room.id === roomId ? { ...room, ...patch } : room)));
   }
 
+  function updateTenantDetails(roomId: string, patch: Partial<RoomTenantDetails>) {
+    const currentRoom = rooms.find((room) => room.id === roomId);
+    const currentBooking = currentRoom?.bookingDetails ?? {};
+    const currentTenant: RoomTenantDetails = currentBooking.tenantDetails ?? {
+      firstName: "",
+      lastName: "",
+    };
+
+    const nextTenant: RoomTenantDetails = {
+      ...currentTenant,
+      ...patch,
+    };
+
+    const fullName = `${nextTenant.firstName} ${nextTenant.lastName}`.trim();
+
+    updateRoom(roomId, {
+      bookingDetails: {
+        ...currentBooking,
+        tenant: fullName || undefined,
+        tenantDetails: nextTenant,
+      },
+    });
+  }
+
   function isBlobUrl(url: string) {
     return url.includes(".blob.vercel-storage.com/");
+  }
+
+  function toDownloadUrl(url: string) {
+    if (!url) return "";
+    if (url.startsWith("/api/admin/blob")) return url;
+    if (url.startsWith("/api/blob")) return url.replace(/^\/api\/blob/, "/api/admin/blob");
+    if (isBlobUrl(url)) return `/api/admin/blob?url=${encodeURIComponent(url)}`;
+    return url;
   }
 
   async function deleteRoomImage(roomId: string, imageUrl: string) {
@@ -96,8 +128,9 @@ export function PropertyEditor({ property }: Props) {
     }
   }
 
-  async function uploadRoomImage(roomId: string, file: File) {
-    setUploading((prev) => ({ ...prev, [roomId]: true }));
+  async function uploadRoomAsset(roomId: string, file: File, kind: "image" | "lease") {
+    const key = kind === "lease" ? `${roomId}:lease` : roomId;
+    setUploading((prev) => ({ ...prev, [key]: true }));
     setStatus("");
 
     try {
@@ -105,6 +138,7 @@ export function PropertyEditor({ property }: Props) {
       formData.append("file", file);
       formData.append("propertyId", property.id);
       formData.append("roomId", roomId);
+      formData.append("kind", kind);
 
       const response = await fetch("/api/admin/upload", {
         method: "POST",
@@ -113,18 +147,30 @@ export function PropertyEditor({ property }: Props) {
 
       const payload = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
       if (!response.ok || !payload?.url) {
-        setStatus(payload?.error ?? "Image upload failed.");
+        setStatus(payload?.error ?? (kind === "lease" ? "Lease upload failed." : "Image upload failed."));
         return;
       }
 
+      if (kind === "image") {
+        updateRoom(roomId, {
+          images: [...(rooms.find((r) => r.id === roomId)?.images ?? []), payload.url],
+        });
+        setStatus("Image uploaded. Remember to Save changes.");
+        return;
+      }
+
+      const current = rooms.find((r) => r.id === roomId);
       updateRoom(roomId, {
-        images: [...(rooms.find((r) => r.id === roomId)?.images ?? []), payload.url],
+        bookingDetails: {
+          ...(current?.bookingDetails ?? {}),
+          leaseAgreementUrl: payload.url,
+        },
       });
-      setStatus("Image uploaded. Remember to Save changes.");
+      setStatus("Lease uploaded. Remember to Save changes.");
     } catch {
-      setStatus("Image upload failed.");
+      setStatus(kind === "lease" ? "Lease upload failed." : "Image upload failed.");
     } finally {
-      setUploading((prev) => ({ ...prev, [roomId]: false }));
+      setUploading((prev) => ({ ...prev, [key]: false }));
     }
   }
 
@@ -137,7 +183,8 @@ export function PropertyEditor({ property }: Props) {
 
   function fromDateInputValue(value: string) {
     if (!value) return undefined;
-    return `${value}T00:00:00.000Z`;
+    // Store inclusive dates as end-of-day UTC.
+    return `${value}T23:59:59.999Z`;
   }
 
   return (
@@ -185,7 +232,7 @@ export function PropertyEditor({ property }: Props) {
                   <th className="px-4 py-3 font-semibold text-stone-700">Price / month</th>
                   <th className="px-4 py-3 font-semibold text-stone-700">Availability</th>
                   <th className="px-4 py-3 font-semibold text-stone-700">Booked until</th>
-                  <th className="px-4 py-3 font-semibold text-stone-700">Tenant (optional)</th>
+                  <th className="px-4 py-3 font-semibold text-stone-700">Booking credentials</th>
                   <th className="px-4 py-3 font-semibold text-stone-700">Images (one per line)</th>
                 </tr>
               </thead>
@@ -228,21 +275,135 @@ export function PropertyEditor({ property }: Props) {
                         className="w-40 rounded-lg border border-stone-300 bg-white px-2 py-1 font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <input
-                        value={room.bookingDetails?.tenant ?? ""}
-                        onChange={(e) => {
-                          const tenant = e.target.value;
-                          updateRoom(room.id, {
-                            bookingDetails: {
-                              ...(room.bookingDetails ?? {}),
-                              tenant: tenant || undefined,
-                            },
-                          });
-                        }}
-                        className="w-44 rounded-lg border border-stone-300 bg-white px-2 py-1 font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
-                        placeholder="e.g. John D."
-                      />
+                    <td className="px-4 py-3 align-top">
+                      <details className="rounded-xl border border-stone-200 bg-white px-3 py-2">
+                        <summary className="cursor-pointer text-xs font-semibold text-stone-800">
+                          {room.bookingDetails?.tenantDetails?.firstName || room.bookingDetails?.tenantDetails?.lastName || room.bookingDetails?.tenant
+                            ? `Edit tenant & lease (${[
+                                room.bookingDetails?.tenantDetails?.firstName,
+                                room.bookingDetails?.tenantDetails?.lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")
+                                .trim() || room.bookingDetails?.tenant || ""})`
+                            : "Add tenant & lease"}
+                        </summary>
+
+                        <div className="mt-3 grid gap-3">
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                              First name
+                              <input
+                                value={room.bookingDetails?.tenantDetails?.firstName ?? ""}
+                                onChange={(e) => updateTenantDetails(room.id, { firstName: e.target.value })}
+                                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                                placeholder="First name"
+                              />
+                            </label>
+                            <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                              Last name
+                              <input
+                                value={room.bookingDetails?.tenantDetails?.lastName ?? ""}
+                                onChange={(e) => updateTenantDetails(room.id, { lastName: e.target.value })}
+                                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                                placeholder="Last name"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                              Phone number
+                              <input
+                                value={room.bookingDetails?.tenantDetails?.phoneNumber ?? ""}
+                                onChange={(e) => updateTenantDetails(room.id, { phoneNumber: e.target.value.trim() || undefined })}
+                                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                                placeholder="e.g. 0712345678"
+                              />
+                            </label>
+                            <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                              Email
+                              <input
+                                type="email"
+                                value={room.bookingDetails?.tenantDetails?.email ?? ""}
+                                onChange={(e) => updateTenantDetails(room.id, { email: e.target.value.trim() || undefined })}
+                                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                                placeholder="e.g. tenant@email.com"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                              ID number
+                              <input
+                                value={room.bookingDetails?.tenantDetails?.idNumber ?? ""}
+                                onChange={(e) => updateTenantDetails(room.id, { idNumber: e.target.value.trim() || undefined })}
+                                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-semibold text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                                placeholder="ID / Passport"
+                              />
+                            </label>
+                          </div>
+
+                          <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                            Residential address
+                            <textarea
+                              value={room.bookingDetails?.tenantDetails?.residentialAddress ?? ""}
+                              onChange={(e) => updateTenantDetails(room.id, { residentialAddress: e.target.value.trim() || undefined })}
+                              rows={2}
+                              className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-medium text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                              placeholder="Street, suburb, city"
+                            />
+                          </label>
+
+                          <label className="grid gap-1 text-xs font-semibold text-stone-700">
+                            Notes (optional)
+                            <textarea
+                              value={room.bookingDetails?.tenantDetails?.notes ?? ""}
+                              onChange={(e) => updateTenantDetails(room.id, { notes: e.target.value.trim() || undefined })}
+                              rows={2}
+                              className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-sm font-medium text-stone-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/30"
+                              placeholder="Anything important for records"
+                            />
+                          </label>
+
+                          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-700">Lease agreement (PDF)</p>
+
+                            {room.bookingDetails?.leaseAgreementUrl ? (
+                              <a
+                                href={toDownloadUrl(room.bookingDetails.leaseAgreementUrl)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex text-sm font-semibold text-teal-800 underline underline-offset-4"
+                              >
+                                Download current lease
+                              </a>
+                            ) : (
+                              <p className="mt-2 text-xs text-stone-600">No lease uploaded yet. (Manual upload supported)</p>
+                            )}
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <label className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
+                                <input
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="hidden"
+                                  disabled={Boolean(uploading[`${room.id}:lease`])}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.currentTarget.value = "";
+                                    if (!file) return;
+                                    uploadRoomAsset(room.id, file, "lease");
+                                  }}
+                                />
+                                {uploading[`${room.id}:lease`] ? "Uploading..." : "Upload lease PDF"}
+                              </label>
+                              <span className="text-xs text-stone-500">Stored for records. (Payment/signing placeholders for later.)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
                     </td>
                     <td className="px-4 py-3">
                       <textarea
@@ -290,7 +451,7 @@ export function PropertyEditor({ property }: Props) {
                               const file = e.target.files?.[0];
                               e.currentTarget.value = "";
                               if (!file) return;
-                              uploadRoomImage(room.id, file);
+                              uploadRoomAsset(room.id, file, "image");
                             }}
                           />
                           {uploading[room.id] ? "Uploading..." : "Upload image"}

@@ -25,6 +25,11 @@ export async function GET(request: NextRequest) {
 		return new NextResponse("Forbidden", { status: 403 });
 	}
 
+	// Never serve lease agreements from the public blob proxy.
+	if (blobUrl.pathname.includes("/lease/")) {
+		return new NextResponse("Forbidden", { status: 403 });
+	}
+
 	const access = blobUrl.hostname.includes(".private.") ? "private" : "public";
 
 	const result = await get(blobUrl.toString(), {

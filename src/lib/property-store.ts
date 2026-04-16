@@ -7,6 +7,8 @@ import { ensureSchema, isPostgresConfigured, isVercelRuntime, sql } from "@/lib/
 const storageDirectory = path.join(process.cwd(), "storage");
 const propertiesFile = path.join(storageDirectory, "properties.json");
 
+const seedPropertyMap: Map<string, Property> = new Map(seedProperties.map((property) => [property.id, property] as const));
+
 async function ensureStorage() {
   try {
     await mkdir(storageDirectory, { recursive: true });
@@ -76,8 +78,116 @@ async function ensureSeeded() {
   await writePropertiesFile(seedProperties);
 }
 
+function isBookingExpired(bookedUntil: string, now: Date) {
+  const datePart = bookedUntil.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const parsed = new Date(bookedUntil);
+    if (Number.isNaN(parsed.getTime())) return false;
+    const normalized = parsed.toISOString().slice(0, 10);
+    const endOfDay = new Date(`${normalized}T23:59:59.999Z`);
+    return now.getTime() > endOfDay.getTime();
+  }
+
+  const endOfDay = new Date(`${datePart}T23:59:59.999Z`);
+  return now.getTime() > endOfDay.getTime();
+}
+
+function normalizeExpiredBookings(list: Property[], now: Date) {
+  let changed = false;
+  const changedPropertyIds = new Set<string>();
+
+  const next = list.map((property) => {
+    if (!property.rooms || property.rooms.length === 0) {
+      return property;
+    }
+
+    let roomsChanged = false;
+    const nextRooms = property.rooms.map((room) => {
+      const bookedUntil = room.bookingDetails?.bookedUntil;
+      if (room.availability !== "booked" || !bookedUntil) {
+        return room;
+      }
+
+      if (!isBookingExpired(bookedUntil, now)) {
+        return room;
+      }
+
+      roomsChanged = true;
+      changed = true;
+
+      return {
+        ...room,
+        availability: "available" as const,
+        lastBookingDetails: room.bookingDetails,
+        bookingDetails: undefined,
+      };
+    });
+
+    if (!roomsChanged) {
+      return property;
+    }
+
+    changedPropertyIds.add(property.id);
+    return {
+      ...property,
+      rooms: nextRooms,
+    };
+  });
+
+  return { next, changed, changedPropertyIds };
+}
+
+function normalizeSeedBackfill(list: Property[]) {
+  let changed = false;
+  const changedPropertyIds = new Set<string>();
+
+  const next = list.map((property) => {
+    const seed = seedPropertyMap.get(property.id);
+    if (!seed) {
+      return property;
+    }
+
+    const patch: Partial<Property> = {};
+
+    if ((!property.directionsUrl || property.directionsUrl.trim().length === 0) && seed.directionsUrl) {
+      patch.directionsUrl = seed.directionsUrl;
+    }
+
+    if ((!property.mapEmbedUrl || property.mapEmbedUrl.trim().length === 0) && seed.mapEmbedUrl) {
+      patch.mapEmbedUrl = seed.mapEmbedUrl;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return property;
+    }
+
+    changed = true;
+    changedPropertyIds.add(property.id);
+
+    return {
+      ...property,
+      ...patch,
+    };
+  });
+
+  return { next, changed, changedPropertyIds };
+}
+
+function normalizeProperties(list: Property[], now: Date) {
+  const expired = normalizeExpiredBookings(list, now);
+  const backfilled = normalizeSeedBackfill(expired.next);
+
+  if (!expired.changed && !backfilled.changed) {
+    return { next: backfilled.next, changed: false, changedPropertyIds: new Set<string>() };
+  }
+
+  const changedPropertyIds = new Set<string>([...expired.changedPropertyIds, ...backfilled.changedPropertyIds]);
+  return { next: backfilled.next, changed: true, changedPropertyIds };
+}
+
 export async function getProperties(): Promise<Property[]> {
   await ensureSeeded();
+  const now = new Date();
 
   if (isPostgresConfigured()) {
     try {
@@ -95,7 +205,22 @@ export async function getProperties(): Promise<Property[]> {
         .filter(Boolean);
 
       if (list.length > 0) {
-        return list;
+        const normalized = normalizeProperties(list, now);
+
+        if (normalized.changed) {
+          try {
+            for (const propertyId of normalized.changedPropertyIds) {
+              const property = normalized.next.find((item) => item.id === propertyId);
+              if (!property) continue;
+              const json = JSON.stringify(property);
+              await sql`UPDATE properties SET data = ${json}::jsonb, updated_at = NOW() WHERE id = ${propertyId}`;
+            }
+          } catch {
+            // Best-effort persistence; return normalized data even if saving fails.
+          }
+        }
+
+        return normalized.next;
       }
     } catch {
       // If Postgres is configured but unreachable, fall back to local seed/file.
@@ -103,7 +228,18 @@ export async function getProperties(): Promise<Property[]> {
   }
 
   const stored = await readPropertiesFile();
-  return stored ?? seedProperties;
+  const base = stored ?? seedProperties;
+  const normalized = normalizeProperties(base, now);
+
+  if (normalized.changed) {
+    try {
+      await writePropertiesFile(normalized.next);
+    } catch {
+      // Ignore (e.g. read-only filesystem on Vercel).
+    }
+  }
+
+  return normalized.next;
 }
 
 export async function getPropertyMap(): Promise<Map<string, Property>> {
